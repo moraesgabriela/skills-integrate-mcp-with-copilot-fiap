@@ -6,21 +6,46 @@ for extracurricular activities at Mergington High School.
 """
 
 from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from datetime import datetime
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 import os
 from pathlib import Path
 
 app = FastAPI(title="Mergington High School API",
-              description="API for viewing and signing up for extracurricular activities")
+              description="API for viewing and signing up for extracurricular activities and saving ideas")
 
 # Mount the static files directory
 current_dir = Path(__file__).parent
 app.mount("/static", StaticFiles(directory=os.path.join(Path(__file__).parent,
           "static")), name="static")
 
+ideas = []  # In-memory idea storage
+
 # In-memory activity database
 activities = {
+
+# Pydantic model for idea
+class Idea(BaseModel):
+    title: str
+    description: str
+    created_at: datetime = None
+
+
+# Route to save a new idea
+@app.post("/ideas")
+def save_idea(idea: Idea):
+    if not idea.title or not idea.description:
+        raise HTTPException(status_code=400, detail="Title and description are required.")
+    idea.created_at = datetime.utcnow()
+    ideas.append(idea.dict())
+    return {"message": "Idea saved successfully.", "idea": idea}
+
+# Route to list all ideas
+@app.get("/ideas")
+def list_ideas():
+    return ideas
     "Chess Club": {
         "description": "Learn strategies and compete in chess tournaments",
         "schedule": "Fridays, 3:30 PM - 5:00 PM",
